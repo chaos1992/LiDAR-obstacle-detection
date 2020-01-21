@@ -1,0 +1,6 @@
+<launch>
+    <rosparam command="load" file="$(find LiDAR_obstacle_detection)/cfg/quad_params.yaml"/>
+    <node name="clustering_final" pkg="LiDAR_obstacle_detection" type="clustering_final"/>
+    <node name="OBB_generator" pkg="LiDAR_obstacle_detection" type="OBB_generator" />
+
+</launch>
