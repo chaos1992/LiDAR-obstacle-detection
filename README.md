@@ -25,10 +25,10 @@ roslaunch lidar_obstacle_detection lidar_detection.launch --screen
 
 # result
 1. Segmentation boxes & obstacle detection boxes
-<img src="LiDAR-obstacle-detection/images/Screenshot from 2020-01-20 16-06-20.png" width="100%" height="100%">
+<img src="LiDAR_obstacle_detection/images/Screenshot from 2020-01-20 16-06-20.png" width="100%" height="100%">
 
 2. obstacle detection in PointCloud
-<img src="LiDAR-obstacle-detection/images/Screenshot from 2020-01-20 16-06-51.png" width="100%" height="100%">
+<img src="LiDAR_obstacle_detection/images/Screenshot from 2020-01-20 16-06-51.png" width="100%" height="100%">
 
 3. rqt graph
-<img src="LiDAR-obstacle-detection/images/Screenshot from 2020-01-20 16-09-04.png" width="100%" height="100%">
+<img src="LiDAR_obstacle_detection/images/Screenshot from 2020-01-20 16-09-04.png" width="100%" height="100%">
