@@ -29,6 +29,9 @@
 
 using namespace std::chrono_literals;
 
+#define MODE 0 // 1 is AABB mode
+                // 0 is OBB mode
+
 class ObbGenerator{
 public:
     ObbGenerator(){
@@ -41,22 +44,23 @@ public:
     }
 
     inline bool _init(){
-        // feature_extractor.getMomentOfInertia (moment_of_inertia);
-        // feature_extractor.getEccentricity (eccentricity);
+        
+#if MODE /* AABB mode */
         feature_extractor.getAABB (min_point_AABB, max_point_AABB);
-        // feature_extractor.getOBB (min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
-        // feature_extractor.getEigenValues (major_value, middle_value, minor_value);
-        // feature_extractor.getEigenVectors (major_vector, middle_vector, minor_vector);
-        // feature_extractor.getMassCenter (mass_center);
+
+#else /* OBB mode */
+        feature_extractor.getOBB (min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
+#endif
         return true;
     }
-//viewer->addCube (min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 1.0, 0.0, "AABB");
+
     void obb_callback(const obb_generator_msgs::cloudArray::ConstPtr& in_obb){
         pcl::PointCloud<pcl::PointXYZ> scan;
         jsk_recognition_msgs::BoundingBox obb;
         jsk_recognition_msgs::BoundingBoxArray obb_arr;
 
         obb_arr.header = in_obb->header;
+        int z_idx = 0;
         for (auto& cloudarr : in_obb->cloudArray){
             pcl::fromROSMsg(cloudarr, scan);
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ> (scan));
@@ -66,19 +70,31 @@ public:
                 ROS_ERROR("value initialize error!");
                 exit(1);
             } 
-            // Eigen::Quaternionf quat (rotational_matrix_OBB);
+#if MODE
             obb.header = in_obb->header;
             obb.pose.position.x = min_point_AABB.x + (max_point_AABB.x - min_point_AABB.x) / 2;
             obb.pose.position.y = min_point_AABB.y + (max_point_AABB.y - min_point_AABB.y) / 2;
             obb.pose.position.z = min_point_AABB.z + (max_point_AABB.z - min_point_AABB.z) / 2;
-            // obb.pose.orientation.x = quat.x();
-            // obb.pose.orientation.y = quat.y();
-            // obb.pose.orientation.z = quat.z();
-            // obb.pose.orientation.w = quat.w();
             obb.dimensions.x = max_point_AABB.x - min_point_AABB.x;
             obb.dimensions.y = max_point_AABB.y - min_point_AABB.y;
-            obb.dimensions.z = max_point_AABB.z - min_point_AABB.z;
-            
+            obb.dimensions.z = in_obb->zArray[z_idx];
+
+
+#else    
+            obb.header = in_obb->header;
+            Eigen::Quaternionf quat (rotational_matrix_OBB);
+            obb.pose.orientation.x = quat.x();
+            obb.pose.orientation.y = quat.y();
+            obb.pose.orientation.z = quat.z();
+            obb.pose.orientation.w = quat.w();
+            obb.pose.position.x = position_OBB.x;
+            obb.pose.position.y = position_OBB.y;
+            obb.pose.position.z = position_OBB.z + (in_obb->zArray[z_idx] / 2) ;
+            obb.dimensions.x = max_point_OBB.x - min_point_OBB.x;
+            obb.dimensions.y = max_point_OBB.y - min_point_OBB.y;
+            obb.dimensions.z = in_obb->zArray[z_idx];
+#endif
+            ++z_idx;
             obb_arr.boxes.emplace_back(obb);
         }
         obbArr_pub.publish(obb_arr);
@@ -91,17 +107,17 @@ private:
     
     pcl::MomentOfInertiaEstimation <pcl::PointXYZ> feature_extractor;
     
-    // std::vector <float> moment_of_inertia;
-    // std::vector <float> eccentricity;
+#if MODE
+    /* AABB mode */
     pcl::PointXYZ min_point_AABB;
     pcl::PointXYZ max_point_AABB;
-    // pcl::PointXYZ min_point_OBB;
-    // pcl::PointXYZ max_point_OBB;
-    // pcl::PointXYZ position_OBB;
-    // Eigen::Matrix3f rotational_matrix_OBB;
-    // float major_value, middle_value, minor_value;
-    // Eigen::Vector3f major_vector, middle_vector, minor_vector;
-    // Eigen::Vector3f mass_center;
+#else
+    /* OBB mode */
+    pcl::PointXYZ min_point_OBB;
+    pcl::PointXYZ max_point_OBB;
+    pcl::PointXYZ position_OBB;
+    Eigen::Matrix3f rotational_matrix_OBB;
+#endif
 };
 
 

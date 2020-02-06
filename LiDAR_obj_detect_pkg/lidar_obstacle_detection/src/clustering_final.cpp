@@ -327,8 +327,7 @@ public:
         cloud_arr_msg.header = in_msg.header;
     }
 
-    void grouping(int index, int box_label, pcl::PointCloud<pcl::PointXYZI>& in_points){
-        // ++grouping_count;
+    void grouping(int index, int box_label, pcl::PointCloud<pcl::PointXYZI>& in_points, double& longest_local_z){
         jsk_recognition_msgs::BoundingBox tmp;
         tmp = totalBox.boxes[index];
         totalBox.boxes.erase(totalBox.boxes.begin() + index);
@@ -336,23 +335,9 @@ public:
         clusteredBox.boxes.emplace_back(tmp);
         auto point = in_points.points[0];
 
-        /* bounding box's edge points */
-        point.x = tmp.pose.position.x + (tmp.dimensions.x / 2);
-        point.y = tmp.pose.position.y + (tmp.dimensions.y / 2);
-        point.z = tmp.pose.position.z + (tmp.dimensions.z / 2);
-        in_points.points.emplace_back(point);
-        point.x = tmp.pose.position.x - (tmp.dimensions.x / 2);
-        point.y = tmp.pose.position.y + (tmp.dimensions.y / 2);
-        point.z = tmp.pose.position.z + (tmp.dimensions.z / 2);
-        in_points.points.emplace_back(point);
-        point.x = tmp.pose.position.x + (tmp.dimensions.x / 2);
-        point.y = tmp.pose.position.y - (tmp.dimensions.y / 2);
-        point.z = tmp.pose.position.z + (tmp.dimensions.z / 2);
-        in_points.points.emplace_back(point);
-        point.x = tmp.pose.position.x - (tmp.dimensions.x / 2);
-        point.y = tmp.pose.position.y - (tmp.dimensions.y / 2);
-        point.z = tmp.pose.position.z + (tmp.dimensions.z / 2);
-        in_points.points.emplace_back(point);
+        if (longest_local_z < tmp.dimensions.z)
+            longest_local_z = tmp.dimensions.z;
+
         point.x = tmp.pose.position.x + (tmp.dimensions.x / 2);
         point.y = tmp.pose.position.y + (tmp.dimensions.y / 2);
         point.z = tmp.pose.position.z - (tmp.dimensions.z / 2);
@@ -372,8 +357,8 @@ public:
 
         for(int i = 0; i < totalBox.boxes.size(); ++i){
             if(check_dist(tmp, totalBox.boxes[i])){
-                grouping(i, box_label, in_points);
-                --i;
+                grouping(i, box_label, in_points, longest_local_z);
+                i = 0;
             }
         }
     }
@@ -385,10 +370,13 @@ public:
         in_points.clear();
         
         int _label_;
+        double longest_local_z;
+
         srand((unsigned)time(NULL));
         while(totalBox.boxes.size() != 0){
+            longest_local_z = 0.0;
             _label_ = rand() % 255 + 1;
-            grouping(0, _label_, in_points);
+            grouping(0, _label_, in_points, longest_local_z);
             in_points.width = static_cast<uint32_t>(in_points.points.size());
             in_points.height = 1;
             pcl::PointCloud<pcl::PointXYZI>::Ptr in_ptr(new pcl::PointCloud<pcl::PointXYZI>(in_points));
@@ -399,6 +387,7 @@ public:
             pcl::toROSMsg(*filtered_cloud, points_group);
         
             cloud_arr_msg.cloudArray.emplace_back(points_group);
+            cloud_arr_msg.zArray.emplace_back(longest_local_z);
             in_points.clear();
         }
         obb_pub.publish(cloud_arr_msg);
@@ -444,23 +433,23 @@ class QuadTree{
 public:
     QuadTree() : seq(0){
         ros::NodeHandle private_nh("~");
-        
-        if(!private_nh.getParam("/quadtree_params/box_z",               box_z))             throw std::runtime_error("set box_z");
-        if(!private_nh.getParam("/quadtree_params/box_height",          box_height))        throw std::runtime_error("set box_height");
-        if(!private_nh.getParam("/quadtree_params/minimum_pixel",       boxSize))           throw std::runtime_error("set boxSize");
-        if(!private_nh.getParam("/quadtree_params/pixel_x",             point_pixel_x))     throw std::runtime_error("set point_pixel_x");
-        if(!private_nh.getParam("/quadtree_params/pixel_y",             point_pixel_y))     throw std::runtime_error("set point_pixel_y");
-        if(!private_nh.getParam("/quadtree_params/QTsub_topic",         subtopic))          throw std::runtime_error("set subtopic");
-        if(!private_nh.getParam("/quadtree_params/QTpub_topic",         pubtopic))          throw std::runtime_error("set pubtopic");
-        if(!private_nh.getParam("/quadtree_params/pixel_Xmax",          pixel_Xmax))        throw std::runtime_error("set pixel_Xmax");
-        if(!private_nh.getParam("/quadtree_params/pixel_Ymax",          pixel_Ymax))        throw std::runtime_error("set pixel_Ymax");
-        if(!private_nh.getParam("/quadnode_params/start_Xindex",        start_Xindex))      throw std::runtime_error("set start_Xindex");
-        if(!private_nh.getParam("/quadnode_params/start_Yindex",        start_Yindex))      throw std::runtime_error("set start_Yindex");
-        if(!private_nh.getParam("/box_params/default_x",                default_x))         throw std::runtime_error("set default_x");
-        if(!private_nh.getParam("/box_params/default_y",                default_y))         throw std::runtime_error("set default_y");
-        if(!private_nh.getParam("/box_params/default_size",             default_size))      throw std::runtime_error("set default_size");
-        if(!private_nh.getParam("/box_params/default_pixel",            default_pixel))     throw std::runtime_error("set default_pixel");
-        if(!private_nh.getParam("/boxcluster_params/correction_eps",   correction_eps))     throw std::runtime_error("set correction_eps");
+         
+        if(!private_nh.getParam("/quadtree_params/box_z",            box_z))          throw std::runtime_error("set box_z");
+        if(!private_nh.getParam("/quadtree_params/box_height",       box_height))     throw std::runtime_error("set box_height");
+        if(!private_nh.getParam("/quadtree_params/minimum_pixel",    boxSize))        throw std::runtime_error("set boxSize");
+        if(!private_nh.getParam("/quadtree_params/pixel_x",          point_pixel_x))  throw std::runtime_error("set point_pixel_x");
+        if(!private_nh.getParam("/quadtree_params/pixel_y",          point_pixel_y))  throw std::runtime_error("set point_pixel_y");
+        if(!private_nh.getParam("/quadtree_params/QTsub_topic",      subtopic))       throw std::runtime_error("set subtopic");
+        if(!private_nh.getParam("/quadtree_params/QTpub_topic",      pubtopic))       throw std::runtime_error("set pubtopic");
+        if(!private_nh.getParam("/quadtree_params/pixel_Xmax",       pixel_Xmax))     throw std::runtime_error("set pixel_Xmax");
+        if(!private_nh.getParam("/quadtree_params/pixel_Ymax",       pixel_Ymax))     throw std::runtime_error("set pixel_Ymax");
+        if(!private_nh.getParam("/quadnode_params/start_Xindex",     start_Xindex))   throw std::runtime_error("set start_Xindex");
+        if(!private_nh.getParam("/quadnode_params/start_Yindex",     start_Yindex))   throw std::runtime_error("set start_Yindex");
+        if(!private_nh.getParam("/box_params/default_x",             default_x))      throw std::runtime_error("set default_x");
+        if(!private_nh.getParam("/box_params/default_y",             default_y))      throw std::runtime_error("set default_y");
+        if(!private_nh.getParam("/box_params/default_size",          default_size))   throw std::runtime_error("set default_size");
+        if(!private_nh.getParam("/box_params/default_pixel",         default_pixel))  throw std::runtime_error("set default_pixel");
+        if(!private_nh.getParam("/boxcluster_params/correction_eps", correction_eps)) throw std::runtime_error("set correction_eps");
 
         ROS_INFO("==================PARAMS==================");
         ROS_INFO("box params:");
@@ -501,7 +490,7 @@ public:
         pixel_Ymax      = const_cast<const int&>(pixel_Ymax);
         default_pixel   = const_cast<const int&>(default_pixel);
         
-        detect_pub = nh.advertise<jsk_recognition_msgs::BoundingBoxArray>(pubtopic.c_str(), 1000); // string -> parameter
+        detect_pub = nh.advertise<jsk_recognition_msgs::BoundingBoxArray>(pubtopic.c_str(), 1); // string -> parameter
         init_pixel();
     }
 

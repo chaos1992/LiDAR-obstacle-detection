@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(lidar_obstacle_detection)
+project(lidar_detect)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-O -Wall -std=c++14 -fpermissive)
@@ -228,30 +228,6 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-add_executable(test_detect
-  src/test_detect.cpp
-)
-add_dependencies(test_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(test_detect
-  ${catkin_LIBRARIES}
-)
-
-add_executable(quadtree_seg
-  src/quadtree_seg.cpp
-)
-add_dependencies(quadtree_seg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(quadtree_seg
-  ${catkin_LIBRARIES}
-)
-
-add_executable(RANSACK_plane
-  src/RANSACK_plane.cpp
-)
-add_dependencies(RANSACK_plane ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(RANSACK_plane
-  ${catkin_LIBRARIES}
-)
 
 add_executable(clustering_final
   src/clustering_final.cpp

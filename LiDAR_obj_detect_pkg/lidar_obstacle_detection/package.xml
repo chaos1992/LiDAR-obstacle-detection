@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>lidar_obstacle_detection</name>
+  <name>lidar_detect</name>
   <version>0.0.0</version>
-  <description>The lidar_obstacle_detection package</description>
+  <description>The lidar_detect package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

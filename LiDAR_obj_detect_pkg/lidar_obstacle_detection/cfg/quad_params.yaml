@@ -20,7 +20,7 @@ quadtree_params:
   pixel_Xmax: -25
   pixel_Ymax: 25
   QTsub_topic: "/degree_filtered_points"
-  QTpub_topic: "/detected_boxs"
+  QTpub_topic: "/detected_boxes"
 
 boxcluster_params:
   correction_eps: 0.2

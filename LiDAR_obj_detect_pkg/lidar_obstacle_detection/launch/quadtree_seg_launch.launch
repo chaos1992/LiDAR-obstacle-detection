@@ -1,0 +1,5 @@
+<launch>
+    <rosparam command="load" file="$(find lidar_detect)/cfg/quad_params.yaml"/>
+    <node name="clustering_final" pkg="lidar_detect" type="clustering_final" />
+    <node name="OBB_generator" pkg="lidar_detect" type="OBB_generator" />
+</launch>
