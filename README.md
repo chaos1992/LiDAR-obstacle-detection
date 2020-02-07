@@ -20,8 +20,9 @@
 * '/obb_boxes'
 
 # Run 
-roslaunch lidar_obstacle_detection lidar_detection.launch --screen 
-
+```sh
+$ roslaunch lidar_obstacle_detection lidar_detection.launch --screen 
+``` 
 
 # result
 1. Segmentation boxes & obstacle detection boxes
